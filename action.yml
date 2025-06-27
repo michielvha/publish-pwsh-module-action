@@ -39,7 +39,7 @@ runs:
     # Step 2: Tag with GitVersion
     - name: Tag with GitVersion
       id: gitversion
-      uses: MKTHEPLUGG/gitversion-tag-action@v3
+      uses: MKTHEPLUGG/gitversion-tag-action@v5
       with:
         configFilePath: gitversion.yml
 
