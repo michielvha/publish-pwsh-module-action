@@ -46,7 +46,12 @@ runs:
     # Step 3: Get commit message
     - name: Get commit message
       id: commitMessage
-      run: echo "message=$(git log -1 --pretty=%B)" >> $GITHUB_ENV
+      run: |
+        {
+          echo 'message<<EOF'
+          git log -1 --pretty=%B
+          echo 'EOF'
+        } >> $GITHUB_ENV
       shell: bash
 
     # Step 4: Create module manifest
