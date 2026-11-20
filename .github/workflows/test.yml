@@ -75,6 +75,9 @@ jobs:
           company-name: Example Company
           author: Example Author
           repository: e2e
+      - name: Check that pwsh steps run the pinned PowerShell
+        shell: pwsh
+        run: ./tests/Assert-PinnedPwsh.ps1
       - name: Check that the version was published once
         shell: pwsh
         run: ./tests/Assert-Published.ps1 -Repository e2e -Version 0.0.1
