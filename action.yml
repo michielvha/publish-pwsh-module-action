@@ -1,94 +1,54 @@
-name: "Publish PowerShell Module To NuGet"
-description: "Reusable action to build, tag, validate, and publish a PowerShell module to the PowerShell Gallery."
-author: "itmvha"
-
-branding:
-  icon: 'package'  # Options include 'package', 'code', 'gear', 'cloud', etc.
-  color: 'blue'    # Supported colors include 'blue', 'green', 'purple', 'red', 'yellow', or a hex code (e.g., '#0366d6')
+name: Publish PowerShell Module
+description: Publish a PowerShell module to the PowerShell Gallery for an exact release tag
 
 inputs:
-  psd1Path:
-    description: "Path to the PSD1 manifest file."
+  module-path:
+    description: Directory holding <root-module>.psm1, relative to the workspace
     required: true
-  psm1Path:
-    description: "Path to the PSM1 module file."
+  tag:
+    description: Exact stable release tag, such as v1.2.3; prerelease tags are refused
     required: true
-  companyName:
-    description: "The name of the company required by nuget"
+  api-key:
+    description: API key for the repository
     required: true
-  apiKey:
-    description: "NuGet API key for publishing to the PowerShell Gallery."
-    required: true
-    secret: true
-  rootModule:
-    description: "the name of the module."
+  root-module:
+    description: Module name; the module file is <root-module>.psm1 and the manifest <root-module>.psd1
     required: true
   description:
-    description: "the description for the module."
+    description: Module description for the manifest
     required: true
+  company-name:
+    description: Company name for the manifest
+    required: true
+  author:
+    description: Author for the manifest
+    required: true
+  release-notes:
+    description: Release notes for the manifest, such as a link to the GitHub Release
+    default: ''
+  repository:
+    description: PSResourceGet repository to publish to
+    default: PSGallery
 
 runs:
-  using: "composite"
+  using: composite
   steps:
-    # Step 1: Checkout code
-    - name: Checkout code
-      uses: actions/checkout@v5
-      with:
-        fetch-depth: 0
+    - name: Set up PowerShell
+      uses: vhco-pro/setup-pwsh-action@a90bb078c3d694146ebc7c255404ac5057c85e2d # v0.1.0
+    - name: Publish the module
+      shell: pwsh
+      env:
+        PUBLISH_MODULE_PATH: ${{ inputs.module-path }}
+        PUBLISH_TAG: ${{ inputs.tag }}
+        PUBLISH_API_KEY: ${{ inputs.api-key }}
+        PUBLISH_ROOT_MODULE: ${{ inputs.root-module }}
+        PUBLISH_DESCRIPTION: ${{ inputs.description }}
+        PUBLISH_COMPANY_NAME: ${{ inputs.company-name }}
+        PUBLISH_AUTHOR: ${{ inputs.author }}
+        PUBLISH_RELEASE_NOTES: ${{ inputs.release-notes }}
+        PUBLISH_REPOSITORY: ${{ inputs.repository }}
+      run: '& (Join-Path $env:GITHUB_ACTION_PATH ''scripts'' ''publish.ps1'')'
 
-    # Step 2: Tag with GitVersion
-    - name: Tag with GitVersion
-      id: gitversion
-      uses: MKTHEPLUGG/gitversion-tag-action@v5
-      with:
-        configFilePath: gitversion.yml
-
-    # Step 3: Get commit message
-    - name: Get commit message
-      id: commitMessage
-      run: |
-        {
-          echo 'message<<EOF'
-          git log -1 --pretty=%B
-          echo 'EOF'
-        } >> $GITHUB_ENV
-      shell: bash
-
-    # Step 4: Create module manifest
-    - name: Create module manifest
-      run: |
-        New-ModuleManifest -Path "${{ inputs.psd1Path }}" `
-        -RootModule "${{ inputs.rootModule }}" `
-        -FunctionsToExport '*' `
-        -Author "itmvha" -ModuleVersion "${{ steps.gitversion.outputs.semVer }}" `
-        -Description "${{ inputs.description }}" `
-        -CompanyName "${{ inputs.companyName }}" `
-        -ReleaseNotes "$env:message"
-      shell: powershell
-
-    # Step Debug: Check if files needed for module creation were succesfully found.
-#    - name: Debug previous steps
-#      run: |
-#        if (Test-Path "${{ inputs.psd1Path }}") {
-#        Write-Host "PDS.psd1 manifest created successfully."
-#        } else {
-#          Write-Error "Failed to create PDS.psd1 manifest at expected path."
-#        }
-#          if (Test-Path "${{ inputs.psm1Path }}") {
-#          Write-Host "PDS.psm1 manifest has been found."
-#        } else {
-#          Write-Error "Failed to find PDS.psm1 manifest at expected path."
-#        }
-#      shell: powershell
-
-    # Step 5: Test module manifest
-    - name: Test module manifest
-      run: |
-        Test-ModuleManifest -Path "${{ inputs.psd1Path }}"
-      shell: powershell
-
-    # Step 6: Publish PowerShell module
-    - name: Publish to PowerShell Gallery
-      run: |
-        Publish-Module -Name "${{ inputs.psm1Path }}" -NuGetApiKey "${{ inputs.apiKey }}"
-      shell: powershell
+branding:
+  icon: package
+  color: blue
